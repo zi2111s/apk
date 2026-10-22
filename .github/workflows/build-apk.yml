@@ -32,6 +32,11 @@ jobs:
           gradle-version: '8.11.1'
       - name: Extract ScreenPulse source
         run: tar -xJf ScreenPulse-src.tar.xz
+      - name: Restore consistent debug signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: screenpulse-personal-debug-signing-v1
       - name: Build installable debug APK
         working-directory: ScreenPulse
         run: gradle --no-daemon --stacktrace :app:assembleDebug
