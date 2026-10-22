@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Prepare a signed ScreenPulse release from the repository's source archive."""
+"""Prepare a signed ScreenPulse release from the source archive."""
 import json
 import os
 import pathlib
 import re
-import sys
 
 ROOT = pathlib.Path.cwd()
 APP = ROOT / "ScreenPulse" / "app"
@@ -16,7 +15,7 @@ for p in (ACTIVITY, MANIFEST, GRADLE):
     if not p.exists():
         raise SystemExit(f"Required source file missing: {p}")
 
-# Give the app a distinct ScreenPulse palette. This is a custom restyle, not a copy of the reference image.
+# Distinct ScreenPulse theme: warm near-white surfaces, navy text, aqua/teal accents.
 s = ACTIVITY.read_text(encoding="utf-8")
 palette = {
     r'private val blue = Color\.rgb\(\d+,\s*\d+,\s*\d+\)': 'private val blue = Color.rgb(24, 157, 163)',
@@ -38,9 +37,10 @@ s = s.replace('"了解你每天使用设备的变化"', '"每一天的变化，�
 s = s.replace('"所有统计数据仅保存在本机"', '"使用记录保存在本机，版本更新可联网检查"')
 s = s.replace('"不要求联网，也不上传任何使用记录"', '"仅联网检查版本；不会上传使用记录"')
 
-# Add the update checker imports without duplicating them on repeated builds.
 for import_line in ('import org.json.JSONObject', 'import java.net.HttpURLConnection', 'import java.net.URL'):
     if import_line not in s:
+        if 'import android.widget.Toast\n' not in s:
+            raise SystemExit("Could not find import insertion point in MainActivity.kt")
         s = s.replace('import android.widget.Toast\n', 'import android.widget.Toast\n' + import_line + '\n', 1)
 
 settings_anchor = '        column.addView(data, pageWidth().apply { topMargin = dp(14) })'
@@ -122,7 +122,6 @@ if 'private fun checkForUpdates()' not in s:
 
 '''
     s = s.replace(method_anchor, method + method_anchor, 1)
-
 ACTIVITY.write_text(s, encoding="utf-8")
 
 manifest = MANIFEST.read_text(encoding="utf-8")
@@ -131,12 +130,26 @@ if 'android.permission.INTERNET' not in manifest:
 MANIFEST.write_text(manifest, encoding="utf-8")
 
 gradle = GRADLE.read_text(encoding="utf-8")
-m = re.search(r'versionCode\s*=\s*(\d+)', gradle)
-if not m:
+code_match = re.search(r'versionCode\s*=\s*(\d+)', gradle)
+if not code_match:
     raise SystemExit("Could not locate versionCode in app/build.gradle.kts")
-version_code = max(int(m.group(1)) + 1, 4)
+version_file = ROOT / "version.json"
+try:
+    previous = json.loads(version_file.read_text(encoding="utf-8"))
+except Exception:
+    previous = {"versionName": "1.2.0", "versionCode": 2}
+previous_code = int(previous.get("versionCode", 2) or 2)
+previous_name = str(previous.get("versionName", "1.2.0"))
+version_match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", previous_name)
+if version_match:
+    major, minor, patch = map(int, version_match.groups())
+    version_name = f"{major}.{minor}.{patch + 1}"
+else:
+    version_name = "1.2.1"
+version_code = max(int(code_match.group(1)) + 1, previous_code + 1, 4)
 gradle = re.sub(r'versionCode\s*=\s*\d+', f'versionCode = {version_code}', gradle, count=1)
-gradle = re.sub(r'versionName\s*=\s*"[^"]+"', 'versionName = "1.2.1"', gradle, count=1)
+gradle = re.sub(r'versionName\s*=\s*"[^"]+"', f'versionName = "{version_name}"', gradle, count=1)
+
 signing = '''
     signingConfigs {
         create("release") {
@@ -158,8 +171,12 @@ if 'signingConfig = signingConfigs.getByName("release")' not in gradle:
 GRADLE.write_text(gradle, encoding="utf-8")
 
 (ROOT / "version.json").write_text(json.dumps({
-    "versionName": "1.2.1",
+    "versionName": version_name,
     "versionCode": version_code,
     "downloadUrl": "https://raw.githubusercontent.com/zi2111s/apk/main/ScreenPulse-debug.apk"
 }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-print(f"Prepared ScreenPulse v1.2.1 (versionCode {version_code}) with teal UI and in-app update checker.")
+if os.environ.get("GITHUB_ENV"):
+    with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
+        env_file.write(f"SCREENPULSE_VERSION_NAME={version_name}\n")
+        env_file.write(f"SCREENPULSE_VERSION_CODE={version_code}\n")
+print(f"Prepared ScreenPulse v{version_name} (versionCode {version_code}) with teal UI and in-app update checker.")
