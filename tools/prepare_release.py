@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Prepare a signed ScreenPulse release from the repository's source archive."""
 import json
+import os
 import pathlib
 import re
 import sys
