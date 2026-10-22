@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <queries>
+    <package android:name="com.android.settings" />
+    <package android:name="com.google.android.apps.wellbeing" />
+    <package android:name="com.vivo.settings" />
+    <package android:name="com.vivo.health" />
+    <package android:name="com.vivo.childmode" />
+    <package android:name="com.vivo.healthy" />
+    <package android:name="com.vivo.screenhealth" />
+    <package android:name="com.vivo.usagestats" />
+    <intent>
+      <action android:name="android.settings.DIGITAL_WELLBEING_SETTINGS" />
+    </intent>
+  </queries>
+  <application android:allowBackup="false" android:label="健康使用设备入口" android:icon="@drawable/ic_shortcut" android:roundIcon="@drawable/ic_shortcut" android:theme="@style/AppTheme" android:supportsRtl="true">
+    <activity android:name=".MainActivity" android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity>
+  </application>
+</manifest>
