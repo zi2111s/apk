@@ -1,32 +1,36 @@
 # 屏幕脉搏 · ScreenPulse
 
-Android 屏幕使用时长监控应用（Kotlin + 原生 Android 视图）。应用通过 Android `UsageStatsManager` 读取系统前台使用记录。
+Android 屏幕使用时长监控应用（Kotlin）。使用本机 Android UsageStatsManager，不读取屏幕内容、不上传应用使用记录。
 
-## 📱 手机直接下载
+## 📱 手机 APK 下载
 
-**[下载最新版 ScreenPulse APK](https://raw.githubusercontent.com/zi2111s/apk/main/ScreenPulse-debug.apk)**
+**[最新版安装包：ScreenPulse-debug.apk](https://raw.githubusercontent.com/zi2111s/apk/main/ScreenPulse-debug.apk)**
 
-仓库固定文件名，手机可直接打开上方链接下载，不需要从 ChatGPT 附件保存文件。
+在手机浏览器中打开链接即可下载，无需从 ChatGPT 附件保存。
 
-## 最新版本：v1.2.2
-- 青绿色与暖灰色的 ScreenPulse 专属主题、更新后的文案与卡片配色。
-- 设置页新增“检查软件更新”：只读取公开的 `version.json`，发现新版本后打开 APK 下载链接。版本号自动递增（当前 versionCode 5）。
-- 正式使用 GitHub Secrets 中的固定签名密钥签署 APK，并在构建后验证签名。
-- 每次构建自动递增 `versionCode`，成功后将 APK 和版本信息更新到仓库。
-- 保留本机使用统计、24小时分布、应用排行、提醒、悬浮计时、CSV 导出等功能。
+## 最新统计修复（2026-10-22）
 
-## 第一次升级说明
-从之前使用临时 debug 签名的 v1.1.0 升级到固定 release 签名的 v1.2.1，Android 可能提示签名冲突。**需要卸载旧版一次后再安装 v1.2.1**。卸载会清除 ScreenPulse 自己保存的提醒/限额设置；Android 系统保留的应用使用统计不依赖 ScreenPulse，通常仍可读取。此后版本请保管好同一把签名密钥，直接覆盖安装即可。
+针对同一时间 vivo 系统显示 **5小时32分**，屏幕脉搏显示 **3小时41分**，以及“近7日平均显示00:00”的问题：
 
-## 签名密钥
-- 永久签名私钥由本人本地生成。
-- `SCREENPULSE_KEYSTORE_BASE64` 和 `SCREENPULSE_STORE_PASSWORD` 只保存在 GitHub Actions Repository Secrets。
-- 私钥文件与密码不得提交到仓库或发送到聊天中。
-- 请把 `ScreenPulse-release.jks` 与密码安全备份；丢失私钥将影响未来覆盖升级。
+- 前台事件不完整时，不再把事件累计当作唯一正确值，同时读取 Android 的 **queryUsageStats(日汇总)**。
+- 当系统日汇总比事件累计更完整且不超出物理使用时段时，今日总时长和应用排行榜统一以真实日汇总为准；反之继续使用事件数据。**不凭空补齐不存在的数据**。
+- 修复同一应用内部 Activity 切换时，旧 Activity 的 PAUSE 把新 Activity 计时错误关掉的问题。
+- 修复部分 ROM 缺失 KEYGUARD_HIDDEN 事件导致长时间暂停计时的问题。
+- 7日平均剔除不可用的历史天数。少于5天可用记录时显示 **—**，不再错误地把未知日期当作0小时。
+- 每次更新今日数据时会用最新的今日报告替换历史缓存中的旧“今天”；解决出现“今日有值、7日平均为00:00”的缓存问题。
+- 小时图仅展示可读取的**原始前台事件**，和日汇总来源不同时可出现不一致；已经在页面明确说明，不会伪造缺失时段。
+- 增加事件归因和来源选择的12项 Kotlin 逻辑测试，并通过。
 
-## 隐私与网络
-使用记录在本机计算，不会上传。v1.2.1 增加了联网权限，但只用于用户主动点击“检查软件更新”时读取公开版本文件；不上传应用使用数据。
+### 数据口径声明
 
-## 自动构建
-修改源代码或构建工作流后，GitHub Actions 会编译、签名、验证 APK，并更新仓库根目录的 `ScreenPulse-debug.apk`。
-[查看构建历史](https://github.com/zi2111s/apk/actions)。
+vivo 的“健康使用设备”可能采用厂商专有服务，其显示值并非 Android 公开 UsageStatsManager 保证能够完全复现的指标。本次是**减少可确认的漏计与错误显示**，并优先使用公开 API 返回的可信日汇总数据；**尚需在设备上复测**，不能保证与 vivo 系统完全相等。
+
+## 覆盖安装和隐私
+
+从 v1.2.2 开始使用你保存在 GitHub Actions Secrets 中的固定签名密钥。此后的签名版发布依然使用同一证书且递增 versionCode，按 Android 规则可以覆盖安装，无需卸载旧版、无需重新授权（前提是之前安装的也是相同签名版本）。
+
+- 用户主动点击“检查更新”时才联网读取公开的 [version.json](./version.json)。
+- 应用使用记录保留在本机，不上传到服务端。
+- Android 13+ 系统通知、悬浮窗依然需要单独授权。
+
+[查看 GitHub Actions 构建结果](https://github.com/zi2111s/apk/actions/workflows/build-apk.yml)
