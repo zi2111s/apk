@@ -1,28 +1,32 @@
 # 屏幕脉搏 · ScreenPulse
 
-一款无需联网、无需 Root 的 Android 使用时长监控应用。源代码基于 Kotlin + 原生 Android 视图，通过系统 UsageStatsManager 获取记录。
+Android 屏幕使用时长监控应用（Kotlin + 原生 Android 视图）。应用通过 Android `UsageStatsManager` 读取系统前台使用记录。
 
-## 📱 手机直接安装
+## 📱 手机直接下载
 
-**[点击下载最新版 Android APK（仓库内的固定文件）](https://github.com/zi2111s/apk/raw/refs/heads/main/ScreenPulse-debug.apk)**
+**[下载最新版 ScreenPulse APK](https://raw.githubusercontent.com/zi2111s/apk/main/ScreenPulse-debug.apk)**
 
-或者在仓库主页点击 `ScreenPulse-debug.apk` → **Download raw file**。无需从 ChatGPT 手机客户端保存附件。
+仓库固定文件名，手机可直接打开上方链接下载，不需要从 ChatGPT 附件保存文件。
 
-## v1.1.0 · 全新界面与计时口径调整
-- 今日、趋势、设置重新设计：温和的薄荷蓝/青绿色、独立品牌头部、渐变使用概览、使用目标圆环、清晰的趋势及应用排行榜，非照搬参考 UI。
-- 首页每 15 秒异步刷新数据：只更新文字/图表，保留滚动位置与应用行；不再每次闪白屏。
-- **重要统计修复：** 今日主数字、应用排行榜、小时图均使用相同的前台应用事件口径。之前混用屏幕交互时长与前台时长，可能出现主数字小于应用列表累计值。
-- 系统原始事件缺失时，使用 Android 日汇总数据并标记为 **≈估算**；对可能重复的日汇总桶按包名去重，避免历史日均异常膨胀。
-- 保留状态栏监控、限额提醒、悬浮气泡、CSV 导出。
+## 最新版本：v1.2.1
+- 青绿色与暖灰色的 ScreenPulse 专属主题、更新后的文案与卡片配色。
+- 设置页新增“检查软件更新”：只读取公开的 `version.json`，发现新版本后打开 APK 下载链接。
+- 正式使用 GitHub Secrets 中的固定签名密钥签署 APK，并在构建后验证签名。
+- 每次构建自动递增 `versionCode`，成功后将 APK 和版本信息更新到仓库。
+- 保留本机使用统计、24小时分布、应用排行、提醒、悬浮计时、CSV 导出等功能。
 
-### 与系统“健康使用设备”仍可能不同
-Android 的前台事件统计与各厂商屏幕使用时长不是同一口径。**当前版本不保证主数字与系统健康使用设备完全一致**。屏幕亮起但没有活跃应用、画中画、多窗口、系统应用、统计延迟等都可能造成差异。历史事件缺失时的估算仅供参考。
+## 第一次升级说明
+从之前使用临时 debug 签名的 v1.1.0 升级到固定 release 签名的 v1.2.1，Android 可能提示签名冲突。**需要卸载旧版一次后再安装 v1.2.1**。卸载会清除 ScreenPulse 自己保存的提醒/限额设置；Android 系统保留的应用使用统计不依赖 ScreenPulse，通常仍可读取。此后版本请保管好同一把签名密钥，直接覆盖安装即可。
 
-### 权限与隐私
-首次启动需授予系统“使用情况访问权限”。通知与悬浮窗为可选功能。应用不申请 INTERNET 权限、不截图、不读取聊天内容、不上传使用记录。
+## 签名密钥
+- 永久签名私钥由本人本地生成。
+- `SCREENPULSE_KEYSTORE_BASE64` 和 `SCREENPULSE_STORE_PASSWORD` 只保存在 GitHub Actions Repository Secrets。
+- 私钥文件与密码不得提交到仓库或发送到聊天中。
+- 请把 `ScreenPulse-release.jks` 与密码安全备份；丢失私钥将影响未来覆盖升级。
 
-## 源码及编译
-完整 Android 项目封装于 `ScreenPulse-src.tar.xz`。本仓库在向 `main` 提交源代码后，GitHub Actions 自动构建 APK，并自动更新根目录的 `ScreenPulse-debug.apk`。
-[查看构建历史](https://github.com/zi2111s/apk/actions/workflows/build-apk.yml)。
+## 隐私与网络
+使用记录在本机计算，不会上传。v1.2.1 增加了联网权限，但只用于用户主动点击“检查软件更新”时读取公开版本文件；不上传应用使用数据。
 
-> 当前是个人测试用 debug 构建。由于此前版本使用了不同构建机的临时 debug 签名，**如果覆盖安装时提示“软件包冲突”，请先卸载旧版再安装**（旧版在 App 内保存的自定义提醒设置会丢失）。从 v1.1.0 起使用固定缓存签名尽量保持后续更新可覆盖安装；这不是正式发布签名，缓存丢失后也可能变化。后续正式发布应使用仓库 Secrets 配置稳定私有签名。
+## 自动构建
+修改源代码或构建工作流后，GitHub Actions 会编译、签名、验证 APK，并更新仓库根目录的 `ScreenPulse-debug.apk`。
+[查看构建历史](https://github.com/zi2111s/apk/actions)。
